@@ -6,7 +6,11 @@ import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import br.com.bruno.data.vo.v1.PersonVO;
+import br.com.bruno.data.vo.v2.PersonVOV2;
 import br.com.bruno.exceptions.ResouceNotFoundException;
+import br.com.bruno.mapper.DozerMapper;
+import br.com.bruno.mapper.custom.PersonMapper;
 import br.com.bruno.model.Person;
 import br.com.bruno.repositories.PersonRepository;
 
@@ -17,32 +21,48 @@ public class PersonServices {
 
 	@Autowired
 	PersonRepository repository;
+	
+	@Autowired
+	PersonMapper mapper;
 
-	public List<Person> findAll() {
+	public List<PersonVO> findAll() {
 
 		logger.info("Encontrando todas as pessoas!");
 
-		return repository.findAll();
+		return DozerMapper.parcerListObject(repository.findAll(), PersonVO.class);
 	}
 
-	public Person findById(Long id) {
+	public PersonVO findById(Long id) {
 
 		logger.info("Encontrar uma pessoa! ");
 
-		return repository.findById(id)
+		var entity = repository.findById(id)
 				.orElseThrow(() -> new ResouceNotFoundException("Nenhum registro encontrado para este ID !"));
+		return DozerMapper.parcerObject(entity, PersonVO.class);
 	}
 
 	// Criar
-	public Person create(Person person) {
+	public PersonVO create(PersonVO person) {
 
 		logger.info("Criando uma pessoa!");
-
-		return repository.save(person);
+		var entity = DozerMapper.parcerObject(person, Person.class);
+		var vo = DozerMapper.parcerObject(repository.save(entity), PersonVO.class);
+		return vo;
+	}
+	
+	
+	// Criar no modo V2
+	public PersonVOV2 createV2(PersonVOV2 person) {
+		
+		logger.info("Criando uma pessoa na V2!");
+		var entity = mapper.convertVoToEntity(person);
+		var vo = mapper.convertEntityToVo(repository.save(entity));
+		return vo;
 	}
 
+	
 	// Atualizar
-	public Person update(Person person) {
+	public PersonVO update(PersonVO person) {
 
 		logger.info("Atualize uma pessoa!");
 
@@ -54,7 +74,8 @@ public class PersonServices {
 		entity.setAddress(person.getAddress());
 		entity.setGender(person.getGender());
 
-		return repository.save(person);
+		var vo = DozerMapper.parcerObject(repository.save(entity), PersonVO.class);
+		return vo;
 	}
 
 	// Deletar
